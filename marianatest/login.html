@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-deep: #0a0a0b;
+      --bg-card: #111113;
+      --amber: #d4a04a;
+      --amber-glow: #d4a04a33;
+      --amber-dim: #d4a04a15;
+      --text-primary: #e8e4dd;
+      --text-muted: #6b6660;
+      --text-subtle: #3a3632;
+      --border: #1e1d1b;
+      --input-bg: #0d0d0e;
+      --error: #c4483e;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      position: relative;
+    }
+
+    /* --- Ambient background --- */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .ambient::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      top: -15%;
+      right: -10%;
+      background: radial-gradient(circle, var(--amber-glow) 0%, transparent 70%);
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+
+    .ambient::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      bottom: -10%;
+      left: 5%;
+      background: radial-gradient(circle, #1a1520 0%, transparent 70%);
+      animation: drift 15s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to { transform: translate(30px, -20px) scale(1.1); }
+    }
+
+    /* --- Geometric accents --- */
+    .geo-line {
+      position: fixed;
+      background: var(--amber);
+      opacity: 0.06;
+      z-index: 0;
+    }
+
+    .geo-line--1 {
+      width: 1px;
+      height: 100vh;
+      left: 22%;
+      top: 0;
+    }
+
+    .geo-line--2 {
+      width: 100vw;
+      height: 1px;
+      left: 0;
+      top: 35%;
+      transform: rotate(-8deg);
+      transform-origin: left center;
+    }
+
+    .geo-line--3 {
+      width: 1px;
+      height: 40vh;
+      right: 18%;
+      bottom: 0;
+    }
+
+    /* --- Noise texture overlay --- */
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.035;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 200px;
+    }
+
+    /* --- Layout --- */
+    .scene {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Left panel — decorative */
+    .panel-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-left .tagline {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: clamp(2.4rem, 4vw, 4rem);
+      line-height: 1.15;
+      color: var(--text-primary);
+      max-width: 420px;
+      opacity: 0;
+      transform: translateY(30px);
+      animation: fadeUp 1s ease-out 0.4s forwards;
+    }
+
+    .panel-left .tagline em {
+      font-style: italic;
+      color: var(--amber);
+    }
+
+    .panel-left .sub {
+      margin-top: 1.2rem;
+      font-size: 0.85rem;
+      font-weight: 300;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp 1s ease-out 0.7s forwards;
+    }
+
+    /* Decorative circle */
+    .deco-circle {
+      position: absolute;
+      top: 12%;
+      left: 15%;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 1px solid var(--amber);
+      opacity: 0;
+      animation: scaleIn 1.2s ease-out 0.2s forwards;
+    }
+
+    .deco-circle::after {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      border-radius: 50%;
+      border: 1px solid var(--amber-dim);
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.7); }
+      to { opacity: 0.15; transform: scale(1); }
+    }
+
+    /* --- Right panel — form --- */
+    .panel-right {
+      width: min(480px, 45%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem;
+      position: relative;
+    }
+
+    .panel-right::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10%;
+      bottom: 10%;
+      width: 1px;
+      background: linear-gradient(to bottom, transparent, var(--border), transparent);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 360px;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.9s ease-out 0.3s forwards;
+    }
+
+    .card__logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      font-size: 1.4rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 0.4rem;
+    }
+
+    .card__title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 1.8rem;
+      color: var(--text-primary);
+      margin-bottom: 2.4rem;
+    }
+
+    /* --- Form --- */
+    .field {
+      margin-bottom: 1.6rem;
+      position: relative;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.55rem;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 300;
+      outline: none;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .field input::placeholder {
+      color: var(--text-subtle);
+    }
+
+    .field input:focus {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px var(--amber-dim), 0 0 20px var(--amber-glow);
+    }
+
+    .field__toggle {
+      position: absolute;
+      right: 12px;
+      top: 34px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .field__toggle:hover {
+      color: var(--amber);
+    }
+
+    .field__toggle svg {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+
+    /* --- Options row --- */
+    .options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .remember {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .remember input[type="checkbox"] {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--text-subtle);
+      border-radius: 3px;
+      background: var(--input-bg);
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .remember input[type="checkbox"]:checked {
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .remember input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 4.5px;
+      top: 1.5px;
+      width: 5px;
+      height: 9px;
+      border: solid var(--bg-deep);
+      border-width: 0 1.5px 1.5px 0;
+      transform: rotate(45deg);
+    }
+
+    .forgot {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .forgot:hover {
+      color: var(--amber);
+    }
+
+    /* --- Button --- */
+    .btn {
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--amber);
+      color: var(--bg-deep);
+      border: none;
+      border-radius: 6px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.5s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px var(--amber-glow);
+    }
+
+    .btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    /* --- Divider --- */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1.8rem 0;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider span {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* --- Footer --- */
+    .card__footer {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .card__footer a {
+      color: var(--amber);
+      text-decoration: none;
+      font-weight: 400;
+      transition: opacity 0.2s;
+    }
+
+    .card__footer a:hover {
+      opacity: 0.8;
+    }
+
+    /* --- Animations --- */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Responsive --- */
+    @media (max-width: 768px) {
+      .panel-left { display: none; }
+      .panel-right {
+        width: 100%;
+        padding: 2rem;
+      }
+      .panel-right::before { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient"></div>
+  <div class="noise"></div>
+  <div class="geo-line geo-line--1"></div>
+  <div class="geo-line geo-line--2"></div>
+  <div class="geo-line geo-line--3"></div>
+
+  <div class="scene">
+    <!-- Left decorative panel -->
+    <div class="panel-left">
+      <div class="deco-circle"></div>
+      <h1 class="tagline">Where every detail <em>matters</em></h1>
+      <p class="sub">Crafted experiences since 2024</p>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="panel-right">
+      <div class="card">
+        <div class="card__logo">Studio</div>
+        <h2 class="card__title">Bienvenido de vuelta</h2>
+
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="username">Usuario</label>
+            <input type="text" id="username" placeholder="tu@email.com" autocomplete="username" required>
+          </div>
+
+          <div class="field">
+            <label for="password">Contrase&ntilde;a</label>
+            <input type="password" id="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password" required>
+            <button type="button" class="field__toggle" id="togglePw" aria-label="Mostrar contrase&ntilde;a">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="options">
+            <label class="remember">
+              <input type="checkbox"> Recordarme
+            </label>
+            <a href="#" class="forgot">Olvidaste tu contrase&ntilde;a?</a>
+          </div>
+
+          <button type="submit" class="btn">Iniciar Sesi&oacute;n</button>
+        </form>
+
+        <div class="divider"><span>o</span></div>
+
+        <p class="card__footer">
+          No tienes cuenta? <a href="#">Reg&iacute;strate</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const toggleBtn = document.getElementById('togglePw');
+    const pwInput = document.getElementById('password');
+
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = pwInput.type === 'password';
+      pwInput.type = isPassword ? 'text' : 'password';
+      toggleBtn.querySelector('svg').style.opacity = isPassword ? '0.5' : '1';
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const user = document.getElementById('username').value.trim();
+      const pass = pwInput.value;
+
+      if (!user || !pass) {
+        const empty = !user ? document.getElementById('username') : pwInput;
+        empty.style.borderColor = '#c4483e';
+        empty.style.boxShadow = '0 0 0 3px #c4483e22';
+        empty.addEventListener('input', function handler() {
+          empty.style.borderColor = '';
+          empty.style.boxShadow = '';
+          empty.removeEventListener('input', handler);
+        });
+        return;
+      }
+
+      const btn = e.target.querySelector('.btn');
+      btn.textContent = 'Entrando...';
+      btn.style.pointerEvents = 'none';
+      btn.style.opacity = '0.7';
+
+      setTimeout(() => {
+        btn.textContent = 'Iniciar Sesion';
+        btn.style.pointerEvents = '';
+        btn.style.opacity = '';
+        alert('Login exitoso (demo)');
+      }, 1500);
+    });
+  </script>
+
+</body>
+</html>
